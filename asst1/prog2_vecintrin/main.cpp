@@ -297,15 +297,21 @@ void clampedExpVector(float *values, int *exponents, float *output, int N)
   __cs149_vec_float oneFloat = _cs149_vset_float(1.f);
   __cs149_vec_float max = _cs149_vset_float(9.999999f);
   __cs149_mask maskAll, maskOverMax, maskYZero, maskYNotZero, maskCountNotZero;
-  int last = N - (N % VECTOR_WIDTH);
 
   for (int i = 0; i < N; i += VECTOR_WIDTH)
   {
+    if (i + VECTOR_WIDTH > N)
+    {
+      i = N - VECTOR_WIDTH;
+    }
+
     // All ones
     maskAll = _cs149_init_ones();
 
     // All zeros
     maskYZero = _cs149_init_ones(0);
+    maskCountNotZero = _cs149_init_ones(0);
+    maskOverMax = _cs149_init_ones(0);
 
     // Load x and y
     _cs149_vload_float(x, values + i, maskAll);  // x = vales[i];
@@ -363,6 +369,7 @@ float arraySumVector(float *values, int N)
   __cs149_vec_float sum = _cs149_vset_float(0.f);
   __cs149_mask maskAll;
 
+  // break vector into chunks of size VECTOR_WIDTH and vector add
   for (int i = 0; i < N / VECTOR_WIDTH; ++i)
   {
     maskAll = _cs149_init_ones();
