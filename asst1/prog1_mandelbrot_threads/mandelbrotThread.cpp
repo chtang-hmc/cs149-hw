@@ -1,19 +1,20 @@
 #include <stdio.h>
 #include <thread>
+#include <iostream>
 
 #include "CycleTimer.h"
 
-typedef struct {
+typedef struct
+{
     float x0, x1;
     float y0, y1;
     unsigned int width;
     unsigned int height;
     int maxIterations;
-    int* output;
+    int *output;
     int threadId;
     int numThreads;
 } WorkerArgs;
-
 
 extern void mandelbrotSerial(
     float x0, float y0, float x1, float y1,
@@ -22,20 +23,25 @@ extern void mandelbrotSerial(
     int maxIterations,
     int output[]);
 
-
 //
 // workerThreadStart --
 //
 // Thread entrypoint.
-void workerThreadStart(WorkerArgs * const args) {
+void workerThreadStart(WorkerArgs *const args)
+{
+    double startTime = CycleTimer::currentSeconds();
 
-    // TODO FOR CS149 STUDENTS: Implement the body of the worker
-    // thread here. Each thread should make a call to mandelbrotSerial()
-    // to compute a part of the output image.  For example, in a
-    // program that uses two threads, thread 0 could compute the top
-    // half of the image and thread 1 could compute the bottom half.
+    int numRows = args->height / args->numThreads;
+    int startRow = args->threadId * numRows;
+    if (args->threadId == args->numThreads - 1)
+    {
+        numRows = args->height % numRows;
+    }
+    mandelbrotSerial(args->x0, args->y0, args->x1, args->y1, args->width, args->height, startRow, numRows, args->maxIterations, args->output);
 
-    printf("Hello world from thread %d\n", args->threadId);
+    double endTime = CycleTimer::currentSeconds();
+
+    std::cout << "Thread " << args->threadId << " time: " << endTime - startTime << std::endl;
 }
 
 //
@@ -61,11 +67,8 @@ void mandelbrotThread(
     std::thread workers[MAX_THREADS];
     WorkerArgs args[MAX_THREADS];
 
-    for (int i=0; i<numThreads; i++) {
-      
-        // TODO FOR CS149 STUDENTS: You may or may not wish to modify
-        // the per-thread arguments here.  The code below copies the
-        // same arguments for each thread
+    for (int i = 0; i < numThreads; i++)
+    {
         args[i].x0 = x0;
         args[i].y0 = y0;
         args[i].x1 = x1;
@@ -75,22 +78,23 @@ void mandelbrotThread(
         args[i].maxIterations = maxIterations;
         args[i].numThreads = numThreads;
         args[i].output = output;
-      
+
         args[i].threadId = i;
     }
 
     // Spawn the worker threads.  Note that only numThreads-1 std::threads
     // are created and the main application thread is used as a worker
     // as well.
-    for (int i=1; i<numThreads; i++) {
+    for (int i = 1; i < numThreads; i++)
+    {
         workers[i] = std::thread(workerThreadStart, &args[i]);
     }
-    
+
     workerThreadStart(&args[0]);
 
     // join worker threads
-    for (int i=1; i<numThreads; i++) {
+    for (int i = 1; i < numThreads; i++)
+    {
         workers[i].join();
     }
 }
-
