@@ -1,9 +1,9 @@
 CXX=g++ -m64
 CXXFLAGS=-I../common -Iobjs/ -O3 -Wall -fPIC -ffp-contract=off
-ISPC=ispc
+ISPC=/Users/jeudi/Downloads/ispc-v1.25.3-macOS.arm64/bin/ispc
 # note: requires AVX2
 # disabling AVX2 FMA since it causes a difference in output compared to reference on Mandelbrot 
-ISPCFLAGS=-O3 --target=avx2-i32x8 --arch=x86-64 --opt=disable-fma --pic
+ISPCFLAGS=-O3 --target=neon-i32x4 --arch=aarch64 --opt=disable-fma --pic
 
 APP_NAME=mandelbrot_ispc
 OBJDIR=objs

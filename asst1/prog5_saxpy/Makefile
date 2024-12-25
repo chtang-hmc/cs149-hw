@@ -1,8 +1,8 @@
 CXX=g++ -m64
 CXXFLAGS=-I../common -Iobjs/ -O2 -Wall 
-ISPC=ispc
-# note: requires AVX2
-ISPCFLAGS=-O3 --target=avx2-i32x8 --arch=x86-64 --pic
+ISPC=/Users/jeudi/Downloads/ispc-v1.25.3-macOS.arm64/bin/ispc
+# note: requires AVX2 capable machine
+ISPCFLAGS=-O3 --target=neon-i32x4 --arch=aarch64 --pic
 
 APP_NAME=saxpy
 OBJDIR=objs
