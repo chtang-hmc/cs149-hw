@@ -4,23 +4,27 @@
 #include "CycleTimer.h"
 #include "saxpy_ispc.h"
 
-extern void saxpySerial(int N, float a, float* X, float* Y, float* result);
-
+extern void saxpySerial(int N, float a, float *X, float *Y, float *result);
 
 // return GB/s
 static float
-toBW(int bytes, float sec) {
+toBW(int bytes, float sec)
+{
     return static_cast<float>(bytes) / (1024. * 1024. * 1024.) / sec;
 }
 
 static float
-toGFLOPS(int ops, float sec) {
+toGFLOPS(int ops, float sec)
+{
     return static_cast<float>(ops) / 1e9 / sec;
 }
 
-static void verifyResult(int N, float* result, float* gold) {
-    for (int i=0; i<N; i++) {
-        if (result[i] != gold[i]) {
+static void verifyResult(int N, float *result, float *gold)
+{
+    for (int i = 0; i < N; i++)
+    {
+        if (result[i] != gold[i])
+        {
             printf("Error: [%d] Got %f expected %f\n", i, result[i], gold[i]);
         }
     }
@@ -28,8 +32,8 @@ static void verifyResult(int N, float* result, float* gold) {
 
 using namespace ispc;
 
-
-int main() {
+int main()
+{
 
     const unsigned int N = 20 * 1000 * 1000; // 20 M element vectors (~80 MB)
     const unsigned int TOTAL_BYTES = 4 * N * sizeof(float);
@@ -37,14 +41,14 @@ int main() {
 
     float scale = 2.f;
 
-    float* arrayX = new float[N];
-    float* arrayY = new float[N];
-    float* resultSerial = new float[N];
-    float* resultISPC = new float[N];
-    float* resultTasks = new float[N];
+    float *arrayX = new float[N];
+    float *arrayY = new float[N];
+    float *resultSerial = new float[N];
+    float *resultISPC = new float[N];
+    float *resultTasks = new float[N];
 
     // initialize array values
-    for (unsigned int i=0; i<N; i++)
+    for (unsigned int i = 0; i < N; i++)
     {
         arrayX[i] = i;
         arrayY[i] = i;
@@ -58,14 +62,15 @@ int main() {
     // timing.
     //
     double minSerial = 1e30;
-    for (int i = 0; i < 3; ++i) {
-        double startTime =CycleTimer::currentSeconds();
+    for (int i = 0; i < 3; ++i)
+    {
+        double startTime = CycleTimer::currentSeconds();
         saxpySerial(N, scale, arrayX, arrayY, resultSerial);
         double endTime = CycleTimer::currentSeconds();
         minSerial = std::min(minSerial, endTime - startTime);
     }
 
-// printf("[saxpy serial]:\t\t[%.3f] ms\t[%.3f] GB/s\t[%.3f] GFLOPS\n",
+    // printf("[saxpy serial]:\t\t[%.3f] ms\t[%.3f] GB/s\t[%.3f] GFLOPS\n",
     //       minSerial * 1000,
     //       toBW(TOTAL_BYTES, minSerial),
     //       toGFLOPS(TOTAL_FLOPS, minSerial));
@@ -74,7 +79,8 @@ int main() {
     // Run the ISPC (single core) implementation
     //
     double minISPC = 1e30;
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 3; ++i)
+    {
         double startTime = CycleTimer::currentSeconds();
         saxpy_ispc(N, scale, arrayX, arrayY, resultISPC);
         double endTime = CycleTimer::currentSeconds();
@@ -92,7 +98,8 @@ int main() {
     // Run the ISPC (multi-core) implementation
     //
     double minTaskISPC = 1e30;
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 3; ++i)
+    {
         double startTime = CycleTimer::currentSeconds();
         saxpy_ispc_withtasks(N, scale, arrayX, arrayY, resultTasks);
         double endTime = CycleTimer::currentSeconds();
@@ -106,9 +113,9 @@ int main() {
            toBW(TOTAL_BYTES, minTaskISPC),
            toGFLOPS(TOTAL_FLOPS, minTaskISPC));
 
-    printf("\t\t\t\t(%.2fx speedup from use of tasks)\n", minISPC/minTaskISPC);
-    //printf("\t\t\t\t(%.2fx speedup from ISPC)\n", minSerial/minISPC);
-    //printf("\t\t\t\t(%.2fx speedup from task ISPC)\n", minSerial/minTaskISPC);
+    printf("\t\t\t\t(%.2fx speedup from use of tasks)\n", minISPC / minTaskISPC);
+    // printf("\t\t\t\t(%.2fx speedup from ISPC)\n", minSerial/minISPC);
+    // printf("\t\t\t\t(%.2fx speedup from task ISPC)\n", minSerial/minTaskISPC);
 
     delete[] arrayX;
     delete[] arrayY;

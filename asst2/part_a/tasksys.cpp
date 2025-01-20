@@ -1,6 +1,4 @@
 #include "tasksys.h"
-#include <queue>
-#include <algorithm>
 
 IRunnable::~IRunnable() {}
 
@@ -144,11 +142,53 @@ TaskSystemParallelThreadPoolSpinning::TaskSystemParallelThreadPoolSpinning(int n
     //
 
     threads_ = new std::thread[num_threads];
+
+    // Create the thread pool
+    for (int i = 0; i < num_threads; i++)
+    {
+        threads_[i] = std::thread(&TaskSystemParallelThreadPoolSpinning::worker, this);
+    }
 }
 
 TaskSystemParallelThreadPoolSpinning::~TaskSystemParallelThreadPoolSpinning()
 {
+    terminate_ = true;
+
+    // Wait for all threads to complete
+    for (int i = 0; i < maxThreads_; i++)
+    {
+        if (threads_[i].joinable())
+        {
+            threads_[i].join();
+        }
+    }
+
     delete[] threads_;
+}
+
+void TaskSystemParallelThreadPoolSpinning::worker()
+{
+    while (!terminate_)
+    {
+        Task task;
+        bool hasTask = false;
+
+        {
+            std::lock_guard<std::mutex> lock(mtx_);
+            if (!task_queue_.empty())
+            {
+                task = task_queue_.front();
+                task_queue_.pop();
+                hasTask = true;
+            }
+        }
+
+        if (hasTask)
+        {
+            task.runnable->runTask(task.currentTask, task.num_total_tasks);
+            task_remaining_--;
+        }
+    }
 }
 
 void TaskSystemParallelThreadPoolSpinning::run(IRunnable *runnable, int num_total_tasks)
@@ -160,8 +200,25 @@ void TaskSystemParallelThreadPoolSpinning::run(IRunnable *runnable, int num_tota
     // tasks sequentially on the calling thread.
     //
 
-    std::mutex* mtx = new std::mutex();
-    
+    running_ = true;
+    task_remaining_ = num_total_tasks;
+
+    // Add tasks to the queue
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        for (int i = 0; i < num_total_tasks; i++)
+        {
+            task_queue_.push(Task{runnable, num_total_tasks, i});
+        }
+    }
+
+    // Spin until all tasks are complete
+    while (task_remaining_ > 0)
+    {
+        // Spin
+    }
+
+    running_ = false;
 }
 
 TaskID TaskSystemParallelThreadPoolSpinning::runAsyncWithDeps(IRunnable *runnable, int num_total_tasks,
