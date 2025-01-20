@@ -65,7 +65,6 @@ public:
     TaskSystemParallelThreadPoolSpinning(int num_threads);
     ~TaskSystemParallelThreadPoolSpinning();
 
-    const char *name();
     std::thread *threads_;
     int maxThreads_;
     std::queue<Task> task_queue_;
@@ -74,6 +73,7 @@ public:
     std::atomic<bool> terminate_;
     bool running_;
 
+    const char *name();
     void worker();
     void run(IRunnable *runnable, int num_total_tasks);
     TaskID runAsyncWithDeps(IRunnable *runnable, int num_total_tasks,
@@ -90,10 +90,27 @@ public:
 class TaskSystemParallelThreadPoolSleeping : public ITaskSystem
 {
 public:
+    struct Task
+    {
+        IRunnable *runnable;
+        int num_total_tasks;
+        int currentTask;
+    };
+
     TaskSystemParallelThreadPoolSleeping(int num_threads);
     ~TaskSystemParallelThreadPoolSleeping();
+
+    std::thread *threads_;
+    int maxThreads_;
+    std::queue<Task> task_queue_;
+    std::mutex mtx_;
+    std::atomic<int> task_remaining_;
+    std::atomic<bool> terminate_;
+    std::condition_variable cv_;
+    bool running_;
+
     const char *name();
-    std::vector<std::thread> threads;
+    void worker();
     void run(IRunnable *runnable, int num_total_tasks);
     TaskID runAsyncWithDeps(IRunnable *runnable, int num_total_tasks,
                             const std::vector<TaskID> &deps);
