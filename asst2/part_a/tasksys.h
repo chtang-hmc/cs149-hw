@@ -7,6 +7,7 @@
 #include <queue>
 #include <vector>
 #include <atomic>
+#include <condition_variable>
 
 /*
  * TaskSystemSerial: This class is the student's implementation of a
@@ -106,7 +107,8 @@ public:
     std::mutex mtx_;
     std::atomic<int> task_remaining_;
     std::atomic<bool> terminate_;
-    std::condition_variable cv_;
+    std::condition_variable task_cv_;
+    std::condition_variable sync_cv_;
     bool running_;
 
     const char *name();

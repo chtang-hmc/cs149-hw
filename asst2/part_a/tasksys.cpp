@@ -277,6 +277,9 @@ void TaskSystemParallelThreadPoolSleeping::worker()
             task.runnable->runTask(task.currentTask, task.num_total_tasks);
             task_remaining_--;
         }
+        else
+        {
+        }
     }
 }
 
